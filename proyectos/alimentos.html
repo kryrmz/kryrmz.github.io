@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Alimentos por Probar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [v-cloak] { display: none; }
+        .fade-enter-active, .fade-leave-active {
+          transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .fade-enter-from, .fade-leave-to {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        .hidden-file-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        .file-input-label {
+            cursor: pointer;
+            display: inline-block;
+        }
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4 md:px-8 pt-4 md:pt-6 max-w-4xl text-left">
+        <a href="../index.html" class="inline-block bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded transition duration-150 ease-in-out">
+            ← Volver al Índice
+        </a>
+    </div>
+
+    <div id="app" v-cloak class="container mx-auto p-4 md:p-8 max-w-4xl bg-white shadow-md rounded-lg my-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">Gestor de Alimentos por Probar</h1>
+
+        <div class="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
+            <h2 class="text-lg font-semibold mb-3 text-gray-700">☁️ Sincronización con GitHub Gist</h2>
+            <div v-if="!isGistConfigured" class="space-y-3">
+                <p class="text-sm text-gray-600">Conecta tu cuenta de GitHub para guardar tus datos en la nube de forma gratuita y segura.</p>
+                <div>
+                    <label for="githubToken" class="block text-sm font-medium text-gray-600">GitHub Personal Access Token (con permiso 'gist')</label>
+                    <input type="password" id="githubToken" v-model.trim="gistConfig.token" placeholder="ghp_..." class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm">
+                </div>
+                <div>
+                    <label for="gistId" class="block text-sm font-medium text-gray-600">Gist ID</label>
+                    <input type="text" id="gistId" v-model.trim="gistConfig.gistId" placeholder="ID de tu Gist secreto" class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm">
+                </div>
+                <div>
+                    <label for="gistFilename" class="block text-sm font-medium text-gray-600">Nombre del Archivo en Gist</label>
+                    <input type="text" id="gistFilename" v-model.trim="gistConfig.fileName" class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm">
+                </div>
+                <div class="flex justify-end">
+                    <button @click="saveGistConfig" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm">Guardar Configuración</button>
+                </div>
+            </div>
+            <div v-else class="space-y-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-green-600 font-semibold text-sm">✓ Conectado al Gist:</span>
+                    <a :href="gistUrl" target="_blank" class="text-sm text-blue-600 hover:underline break-all">{{ gistConfig.gistId }}</a>
+                    <button @click="disconnectGist" class="text-xs bg-red-100 text-red-700 hover:bg-red-200 py-1 px-2 rounded">Desconectar</button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                     <button @click="loadGist" :disabled="isGistLoading" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2">
+                        <div v-if="isGistLoading" class="spinner"></div>
+                        <span>Cargar desde Gist</span>
+                    </button>
+                     <button @click="saveGist" :disabled="isGistSaving" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2">
+                        <div v-if="isGistSaving" class="spinner"></div>
+                        <span>Guardar en Gist</span>
+                    </button>
+                </div>
+            </div>
+             <p v-if="statusMessage" class="text-sm mt-3" :class="{'text-green-600': !isError, 'text-red-600': isError}">{{ statusMessage }}</p>
+        </div>
+
+         <div class="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
+             <h3 class="text-md font-semibold mb-2 text-gray-600"> Respaldo Local (Archivos)</h3>
+             <div class="flex flex-wrap gap-2">
+                 <label for="fileInput" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm file-input-label">
+                     Importar desde Archivo
+                 </label>
+                 <input type="file" id="fileInput" ref="fileInput" @change="handleFileSelected" accept=".txt,.json" class="hidden-file-input">
+                 <button @click="saveFile" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">
+                     Exportar a Archivo
+                 </button>
+             </div>
+        </div>
+
+        <div class="mb-6 p-4 bg-yellow-50 rounded border border-yellow-200">
+            <h2 class="text-lg font-semibold mb-3 text-gray-700">Agregar Nuevo Alimento</h2>
+            <form @submit.prevent="agregarAlimento">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="foodName" class="block text-sm font-medium text-gray-600">Nombre del Alimento/Platillo</label>
+                        <input type="text" id="foodName" v-model.trim="nuevoAlimento.nombre" required placeholder="Ej: Tacos al pastor"
+                               class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label for="foodLocation" class="block text-sm font-medium text-gray-600">Lugar/Descripción (Opcional)</label>
+                        <input type="text" id="foodLocation" v-model.trim="nuevoAlimento.descripcion" placeholder="Ej: Taquería El Paisa"
+                               class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-sm">
+                        Añadir a la lista
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 text-gray-700">Pendientes por Probar ({{ porProbar.length }})</h2>
+             <div v-if="porProbar.length === 0" class="text-center text-gray-500 p-4 border rounded bg-gray-50">¡Felicidades! No tienes nada pendiente.</div>
+            <ul v-else class="space-y-3">
+                <transition-group name="fade" tag="ul">
+                    <li v-for="alimento in porProbar" :key="alimento.id" class="p-3 bg-white border rounded-lg shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ alimento.nombre }}</p>
+                            <p v-if="alimento.descripcion" class="text-sm text-gray-500">{{ alimento.descripcion }}</p>
+                        </div>
+                        <div class="space-x-2 flex-shrink-0">
+                            <button @click="toggleProbado(alimento)" title="Marcar como probado" class="text-green-500 hover:text-green-700 p-1 text-xl">✅</button>
+                            <button @click="eliminarAlimento(alimento.id)" title="Eliminar" class="text-red-500 hover:text-red-700 p-1 text-xl">🗑️</button>
+                        </div>
+                    </li>
+                </transition-group>
+            </ul>
+        </div>
+        
+        <div class="mb-6">
+             <div class="flex justify-between items-center mb-3">
+                 <h2 class="text-lg font-semibold text-gray-700">Alimentos Ya Probados</h2>
+                 <button v-if="probados.length > 0" @click="showProbados = !showProbados" class="text-sm text-indigo-600 hover:text-indigo-800">{{ showProbados ? 'Ocultar' : 'Mostrar' }} ({{ probados.length }})</button>
+             </div>
+             <div v-if="showProbados && probados.length > 0" class="p-4 bg-gray-50 border rounded-lg">
+                 <ul class="space-y-3">
+                    <transition-group name="fade" tag="ul">
+                        <li v-for="alimento in probados" :key="alimento.id" class="p-3 bg-white border rounded-lg flex items-center justify-between opacity-70">
+                            <div>
+                                <p class="font-semibold text-gray-600 line-through">{{ alimento.nombre }}</p>
+                                <p v-if="alimento.descripcion" class="text-sm text-gray-500 line-through">{{ alimento.descripcion }}</p>
+                            </div>
+                            <div class="space-x-2 flex-shrink-0">
+                                <button @click="toggleProbado(alimento)" title="Mover a pendientes" class="text-blue-500 hover:text-blue-700 p-1 text-xl">♻️</button>
+                                <button @click="eliminarAlimento(alimento.id)" title="Eliminar permanentemente" class="text-red-500 hover:text-red-700 p-1 text-xl">🗑️</button>
+                            </div>
+                        </li>
+                    </transition-group>
+                 </ul>
+             </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    alimentos: [],
+                    nuevoAlimento: { nombre: '', descripcion: '' },
+                    showProbados: false,
+                    statusMessage: '',
+                    isError: false,
+                    _statusTimeout: null,
+                    gistConfig: {
+                        token: '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',
+                        gistId: '648d7f30eadbfb74c26413d6a773de45',
+                        fileName: 'my-food-list.json'
+                    },
+                    isGistLoading: false,
+                    isGistSaving: false,
+                    configStorageKey: 'food-app-gist-config'
+                };
+            },
+            computed: {
+                porProbar() { return this.alimentos.filter(a => !a.probado).sort((a, b) => b.id - a.id); },
+                probados() { return this.alimentos.filter(a => a.probado).sort((a, b) => b.id - a.id); },
+                isGistConfigured() { return !!this.gistConfig.token && !!this.gistConfig.gistId; },
+                gistUrl() { return `https://gist.github.com/${this.gistConfig.gistId}`; }
+            },
+            methods: {
+                generarId() { return Date.now(); },
+                agregarAlimento() {
+                    if (!this.nuevoAlimento.nombre) return;
+                    this.alimentos.push({
+                        id: this.generarId(),
+                        nombre: this.nuevoAlimento.nombre,
+                        descripcion: this.nuevoAlimento.descripcion,
+                        probado: false
+                    });
+                    this.nuevoAlimento.nombre = '';
+                    this.nuevoAlimento.descripcion = '';
+                    this.showStatus('Alimento añadido. No olvides guardar.', false, 2000);
+                },
+                toggleProbado(alimento) {
+                    alimento.probado = !alimento.probado;
+                },
+                eliminarAlimento(id) {
+                    const alimento = this.alimentos.find(a => a.id === id);
+                    if (alimento && confirm(`¿Estás seguro de que quieres eliminar "${alimento.nombre}"?`)) {
+                        this.alimentos = this.alimentos.filter(a => a.id !== id);
+                        this.showStatus('Alimento eliminado.', false, 2000);
+                    }
+                },
+                showStatus(message, isError = false, duration = 4000) {
+                    this.statusMessage = message;
+                    this.isError = isError;
+                    if (this._statusTimeout) clearTimeout(this._statusTimeout);
+                    if (duration > 0) {
+                        this._statusTimeout = setTimeout(() => { this.statusMessage = ''; }, duration);
+                    }
+                },
+                loadGistConfig() {
+                    const localConfig = localStorage.getItem(this.configStorageKey);
+                    if (localConfig) {
+                        this.gistConfig = JSON.parse(localConfig);
+                    }
+                },
+                saveGistConfig() {
+                    if (!this.gistConfig.token || !this.gistConfig.gistId) {
+                        this.showStatus("Por favor, completa el Token y el Gist ID.", true);
+                        return;
+                    }
+                    localStorage.setItem(this.configStorageKey, JSON.stringify(this.gistConfig));
+                    this.showStatus("Configuración guardada en el navegador.", false);
+                },
+                disconnectGist() {
+                    if (confirm("¿Desconectar? Tu configuración de Gist se borrará del navegador.")) {
+                        this.gistConfig = { token: '', gistId: '', fileName: 'my-food-list.json' };
+                        localStorage.removeItem(this.configStorageKey);
+                        this.showStatus("Desconectado.", false);
+                    }
+                },
+                async apiCall(method = 'GET', body = null) {
+                    const headers = {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${this.gistConfig.token}`
+                    };
+                    if (body) {
+                        headers['Content-Type'] = 'application/json';
+                    }
+                    const response = await fetch(`https://api.github.com/gists/${this.gistConfig.gistId}`, {
+                        method,
+                        headers,
+                        body: body ? JSON.stringify(body) : null
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Error ${response.status}: ${errorData.message || 'Error de red'}`);
+                    }
+                    return response.json();
+                },
+                async loadGist() {
+                    if (!this.isGistConfigured) return;
+                    this.isGistLoading = true;
+                    this.showStatus("Cargando desde Gist...", false, 0);
+                    try {
+                        const data = await this.apiCall('GET');
+                        const file = data.files[this.gistConfig.fileName];
+                        if (!file) throw new Error(`El archivo '${this.gistConfig.fileName}' no se encontró en el Gist.`);
+                        const content = JSON.parse(file.content);
+                        this.loadData(content);
+                        this.showStatus("Datos cargados desde Gist correctamente.", false);
+                    } catch (error) {
+                        this.showStatus(`Error al cargar: ${error.message}`, true);
+                    } finally {
+                        this.isGistLoading = false;
+                    }
+                },
+                async saveGist() {
+                    if (!this.isGistConfigured) return;
+                    this.isGistSaving = true;
+                    this.showStatus("Guardando en Gist...", false, 0);
+                    try {
+                        const payload = {
+                            description: "Mi lista de alimentos por probar",
+                            files: {
+                                [this.gistConfig.fileName]: {
+                                    content: this.prepareSaveData()
+                                }
+                            }
+                        };
+                        await this.apiCall('PATCH', payload);
+                        this.showStatus("¡Guardado en Gist con éxito!", false);
+                    } catch (error) {
+                        this.showStatus(`Error al guardar: ${error.message}`, true);
+                    } finally {
+                        this.isGistSaving = false;
+                    }
+                },
+                prepareSaveData() {
+                     return JSON.stringify({ alimentos: this.alimentos }, null, 2);
+                },
+                loadData(data) {
+                     if (data && Array.isArray(data.alimentos)) {
+                        this.alimentos = data.alimentos;
+                     } else {
+                        throw new Error("El formato de los datos no es válido.");
+                     }
+                },
+                handleFileSelected(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            this.loadData(data);
+                            this.showStatus(`Archivo "${file.name}" importado.`, false);
+                        } catch (err) {
+                            this.showStatus(`Error al leer el archivo: ${err.message}`, true);
+                        } finally {
+                            event.target.value = null;
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+                saveFile() {
+                    try {
+                        const dataString = this.prepareSaveData();
+                        const blob = new Blob([dataString], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = this.gistConfig.fileName || 'MisAlimentos.json';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        this.showStatus("Archivo exportado para descarga.", false);
+                    } catch (error) {
+                         this.showStatus("Error al generar el archivo.", true);
+                    }
+                }
+            },
+            mounted() {
+                this.loadGistConfig();
+                if (this.isGistConfigured) {
+                    this.showStatus("Configuración de Gist cargada. ¡Listo para sincronizar!", false, 5000);
+                } else {
+                    this.showStatus("Bienvenido. Configura la sincronización con Gist o usa archivos locales.", false, 5000);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
