@@ -66,7 +66,9 @@
                     <label for="gistFilename" class="block text-sm font-medium text-gray-600">Nombre del Archivo en Gist</label>
                     <input type="text" id="gistFilename" v-model.trim="gistConfig.fileName" class="mt-1 p-2 block w-full border border-gray-300 rounded shadow-sm">
                 </div>
-                <div class="flex justify-end">
+                <div class="flex justify-between items-center">
+                    <label for="configFile" class="text-sm text-blue-600 hover:underline cursor-pointer file-input-label">O cargar desde archivo...</label>
+                    <input type="file" id="configFile" @change="handleConfigFileSelected" accept=".json" class="hidden-file-input">
                     <button @click="saveGistConfig" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm">Guardar Configuración</button>
                 </div>
             </div>
@@ -91,14 +93,14 @@
         </div>
 
          <div class="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
-             <h3 class="text-md font-semibold mb-2 text-gray-600"> Respaldo Local (Archivos)</h3>
+             <h3 class="text-md font-semibold mb-2 text-gray-600"> Respaldo Local (Archivos de Datos)</h3>
              <div class="flex flex-wrap gap-2">
                  <label for="fileInput" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm file-input-label">
-                     Importar desde Archivo
+                     Importar Datos
                  </label>
-                 <input type="file" id="fileInput" ref="fileInput" @change="handleFileSelected" accept=".txt,.json" class="hidden-file-input">
+                 <input type="file" id="fileInput" @change="handleFileSelected" accept=".txt,.json" class="hidden-file-input">
                  <button @click="saveFile" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">
-                     Exportar a Archivo
+                     Exportar Datos
                  </button>
              </div>
         </div>
@@ -183,8 +185,8 @@
                     isError: false,
                     _statusTimeout: null,
                     gistConfig: {
-                        token: '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',
-                        gistId: '648d7f30eadbfb74c26413d6a773de45',
+                        token: '',
+                        gistId: '',
                         fileName: 'my-food-list.json'
                     },
                     isGistLoading: false,
@@ -250,6 +252,28 @@
                         localStorage.removeItem(this.configStorageKey);
                         this.showStatus("Desconectado.", false);
                     }
+                },
+                handleConfigFileSelected(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const config = JSON.parse(e.target.result);
+                            if (config.token && config.gistId) {
+                                this.gistConfig.token = config.token;
+                                this.gistConfig.gistId = config.gistId;
+                                this.showStatus("Configuración cargada desde archivo. Haz clic en 'Guardar Configuración' para conservarla.", false);
+                            } else {
+                                throw new Error("El archivo no tiene el formato esperado (token, gistId).");
+                            }
+                        } catch (err) {
+                            this.showStatus(`Error al leer el archivo de configuración: ${err.message}`, true);
+                        } finally {
+                            event.target.value = null;
+                        }
+                    };
+                    reader.readAsText(file);
                 },
                 async apiCall(method = 'GET', body = null) {
                     const headers = {
@@ -326,9 +350,9 @@
                         try {
                             const data = JSON.parse(e.target.result);
                             this.loadData(data);
-                            this.showStatus(`Archivo "${file.name}" importado.`, false);
+                            this.showStatus(`Archivo de datos "${file.name}" importado.`, false);
                         } catch (err) {
-                            this.showStatus(`Error al leer el archivo: ${err.message}`, true);
+                            this.showStatus(`Error al leer el archivo de datos: ${err.message}`, true);
                         } finally {
                             event.target.value = null;
                         }
@@ -345,9 +369,9 @@
                         link.download = this.gistConfig.fileName || 'MisAlimentos.json';
                         link.click();
                         URL.revokeObjectURL(url);
-                        this.showStatus("Archivo exportado para descarga.", false);
+                        this.showStatus("Archivo de datos exportado para descarga.", false);
                     } catch (error) {
-                         this.showStatus("Error al generar el archivo.", true);
+                         this.showStatus("Error al generar el archivo de datos.", true);
                     }
                 }
             },
@@ -356,7 +380,7 @@
                 if (this.isGistConfigured) {
                     this.showStatus("Configuración de Gist cargada. ¡Listo para sincronizar!", false, 5000);
                 } else {
-                    this.showStatus("Bienvenido. Configura la sincronización con Gist o usa archivos locales.", false, 5000);
+                    this.showStatus("Bienvenido. Configura la sincronización con Gist.", false, 5000);
                 }
             }
         }).mount('#app');
