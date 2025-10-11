@@ -81,6 +81,7 @@ body {
   z-index: 1000;
   text-align: center;
   animation: fade-in-message 2s 1s backwards;
+  width: 90%;
 }
 
 .countdown {
@@ -183,7 +184,7 @@ body {
   position: relative;
   transform: scale(0.9);
   width: 50vmin;
-  height: 80vmin;
+  height: 90vmin;
 }
 
 .flowers--mirror {
@@ -1462,21 +1463,6 @@ body {
   animation-play-state: paused !important;
 }
 
-@media (max-width: 1400px) {
-  .flowers {
-    transform: scale(0.8);
-  }
-  .flowers--mirror {
-    transform: scale(0.8) scaleX(-1);
-  }
-  .message-container {
-    top: 12vh;
-  }
-  .countdown__timer {
-    gap: clamp(0.3rem, 1.5vw, 1rem);
-  }
-}
-
 @media (max-width: 1024px) {
   body {
     gap: 0;
@@ -1487,166 +1473,59 @@ body {
   .flowers--mirror {
     transform: scale(0.7) scaleX(-1);
   }
-  .message-container {
-    top: 10vh;
-  }
-  .long-g {
-    bottom: 20vmin;
-  }
-  .countdown__label {
-    font-size: clamp(0.9rem, 2vw, 1.3rem);
-  }
-  .countdown__date {
-    font-size: clamp(1.3rem, 3vw, 2rem);
-  }
-  .countdown__value {
-    font-size: clamp(1.5rem, 4vw, 3rem);
-  }
 }
 
 @media (max-width: 768px) {
-  .flowers {
-    transform: scale(0.6);
-  }
-  .flowers--mirror {
-    transform: scale(0.6) scaleX(-1);
-  }
-  .message-container {
-    top: 8vh;
-    padding: 0 1rem;
-    position: relative;
-    z-index: 1001;
-  }
-  .flower__line {
-    height: 50vmin;
-  }
-  .flower--1 .flower__line {
-    height: 60vmin;
-  }
-  .flower--2 .flower__line {
-    height: 50vmin;
-  }
-  .long-g {
-    bottom: 15vmin;
-  }
-  .flower__grass {
-    bottom: 10vmin;
-  }
-  .countdown__label {
-    font-size: clamp(0.8rem, 2vw, 1.2rem);
-  }
-  .countdown__date {
-    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-    margin-bottom: 1rem;
-  }
-  .countdown__value {
-    font-size: clamp(1.3rem, 3.5vw, 2.5rem);
-    width: clamp(3.5rem, 7vw, 4rem);
-  }
-  .countdown__unit {
-    font-size: clamp(0.6rem, 1.2vw, 0.9rem);
-  }
-  .countdown__timer {
-    gap: clamp(0.2rem, 1vw, 0.8rem);
-  }
-}
-
-@media (max-width: 480px) {
   body {
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
     gap: 0;
   }
-  .flowers, .flowers--mirror {
-    transform: scale(0.65);
-    width: 100vmin;
-    height: 60vmin;
-    margin-bottom: -20vmin;
+
+  .message-container {
+    top: 5vh;
   }
+  
+  .flowers {
+    transform: scale(0.9);
+    width: 90vmin;
+    height: 90vmin;
+  }
+  
   .flowers--mirror {
     display: none;
   }
-  .message-container {
-    top: 6vh;
-    padding: 0 0.5rem;
-  }
-  .flower__line {
-    height: 45vmin;
-  }
-  .flower--1 .flower__line {
-    height: 55vmin;
-  }
-  .flower--2 .flower__line {
-    height: 45vmin;
-  }
-  .long-g {
-    bottom: 12vmin;
-  }
-  .long-g .leaf {
-    --h: 35vmin;
-  }
-  .flower__grass {
-    bottom: 8vmin;
-  }
-  .flower__grass--bottom {
-    height: 20vmin;
-  }
+  
   .countdown__label {
-    font-size: 0.75rem;
-    margin-bottom: 0.3rem;
+    font-size: clamp(1rem, 4vw, 1.2rem);
   }
+  
   .countdown__date {
-    font-size: 1rem;
-    margin-bottom: 0.8rem;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    margin-bottom: 1rem;
   }
-  .countdown__value {
-    font-size: 1.2rem;
-    width: clamp(2.8rem, 7vw, 3.2rem);
-    height: clamp(2.5rem, 6vw, 2.8rem);
-  }
-  .countdown__unit {
-    font-size: 0.55rem;
-    margin-top: 0.3rem;
-  }
-  .countdown__separator {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
-  }
+
   .countdown__timer {
-    gap: 0.2rem;
+    gap: clamp(0.5rem, 3vw, 1rem);
+  }
+  
+  .countdown__value {
+    font-size: clamp(2rem, 8vw, 3rem);
+    width: clamp(4rem, 15vw, 5rem);
+    height: clamp(3.5rem, 12vw, 4.5rem);
+  }
+  
+  .countdown__unit {
+    font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+  }
+  
+  .countdown__separator {
+     margin-bottom: 1.5rem;
   }
 }
 
-@media (max-width: 360px) {
-  .flowers, .flowers--mirror {
-    transform: scale(0.6);
-  }
-  .message-container {
-    top: 5vh;
-    padding: 0 0.3rem;
-  }
-  .flower__line {
-    height: 40vmin;
-  }
-  .flower--1 .flower__line {
-    height: 50vmin;
-  }
-  .flower--2 .flower__line {
-    height: 40vmin;
-  }
-  .countdown__label {
-    font-size: 0.7rem;
-  }
-  .countdown__date {
-    font-size: 0.9rem;
-  }
-  .countdown__value {
-    font-size: 1.1rem;
-    width: clamp(2.5rem, 7vw, 2.8rem);
-  }
-  .countdown__unit {
-    font-size: 0.5rem;
+@media (max-width: 400px) {
+  .countdown__item:last-of-type,
+  .countdown__separator:last-of-type {
+    display: none;
   }
 }
 
@@ -1657,6 +1536,8 @@ body {
   .flowers, .flowers--mirror {
     transform: scale(0.5);
     display: block !important;
+    width: 50vmin;
+    height: 90vmin;
   }
   .message-container {
     top: 3vh;
@@ -1681,21 +1562,6 @@ body {
   }
   .countdown__timer {
     gap: 0.3rem;
-  }
-  .flower__line {
-    height: 40vmin;
-  }
-  .flower--1 .flower__line {
-    height: 50vmin;
-  }
-  .flower--2 .flower__line {
-    height: 45vmin;
-  }
-  .long-g {
-    bottom: 10vmin;
-  }
-  .long-g .leaf {
-    --h: 30vmin;
   }
 }
 
@@ -1751,7 +1617,7 @@ body {
     <div class="countdown__date">5 de Enero 2026</div>
     <div class="countdown__timer">
       <div class="countdown__item">
-        <div class="countdown__value" id="days">000</div>
+        <div class="countdown__value" id="days">0</div>
         <div class="countdown__unit">Días</div>
       </div>
       <div class="countdown__separator">:</div>
