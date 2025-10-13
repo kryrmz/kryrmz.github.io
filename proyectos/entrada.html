@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrada del Diario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [v-cloak] { display: none; }
+        body { font-family: sans-serif; }
+        .prose-styles ol { list-style-type: decimal; margin-left: 1.5rem; }
+        .prose-styles li { margin-bottom: 0.5rem; }
+        .prose-styles strong { font-weight: 600; }
+        .prose-styles em { font-style: italic; }
+        .prose-styles br { display: block; content: ""; margin-top: 1rem; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4 md:px-8 pt-4 md:pt-6 max-w-4xl text-left">
+        <a href="diario.html" class="inline-block bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded transition duration-150 ease-in-out">
+            ← Volver al Diario
+        </a>
+    </div>
+
+    <div id="app" v-cloak class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <main>
+            <div v-if="loading" class="text-center text-gray-500">
+                <p>Cargando entrada...</p>
+            </div>
+            <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">¡Error!</strong> <span class="block sm-inline">{{ error }}</span>
+            </div>
+
+            <article v-if="!loading && !error && entrada" class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                <p class="text-sm text-gray-500 mb-2">{{ formatearFecha(entrada.fecha) }}</p>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6 border-b pb-4">{{ entrada.titulo }}</h1>
+                
+                <div class="text-gray-700 leading-relaxed text-lg prose-styles" v-html="entrada.contenido"></div>
+
+                <div v-if="entrada.momentos && entrada.momentos.length > 0" class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Momentos del día</h3>
+                    <div class="space-y-4">
+                        <div v-for="momento in entrada.momentos" :key="momento.hora" class="flex items-start gap-4">
+                            <span class="bg-gray-100 text-gray-700 font-mono text-sm font-semibold py-1 px-3 rounded-full mt-1">{{ momento.hora }}</span>
+                            <p class="text-gray-600 flex-1 prose-styles" v-html="momento.descripcion"></p>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    entrada: null,
+                    loading: true,
+                    error: null,
+                };
+            },
+            methods: {
+                async cargarEntrada() {
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        const id = params.get('id');
+
+                        if (!id) {
+                            throw new Error('No se ha especificado una entrada para cargar.');
+                        }
+
+                        const response = await fetch(`/data/diario/${id}`);
+                        if (!response.ok) {
+                            throw new Error(`No se pudo encontrar la entrada '${id}'.`);
+                        }
+                        this.entrada = await response.json();
+                        document.title = this.entrada.titulo;
+                    } catch (err) {
+                        this.error = err.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                formatearFecha(fecha) {
+                    const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+                    return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', opciones);
+                }
+            },
+            mounted() {
+                this.cargarEntrada();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
